@@ -1,9 +1,10 @@
-from google import genai
+import google.generativeai as genai
 import json
 import re
 import os
 
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 def analyze_resume(resume_text: str, job_description: str = "") -> dict:
     jd_section = f"\n\nJob Description:\n{job_description}" if job_description else ""
@@ -27,17 +28,11 @@ Return this exact JSON structure:
     {{"keyword": "<word>", "reason": "<why it matters>"}}
   ]
 }}
-
 missing_keywords should be empty array if no job description was provided.
 """
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
+    response = model.generate_content(prompt)
     raw = response.text
-
     match = re.search(r'\{[\s\S]*\}', raw)
     if not match:
         raise ValueError("Could not parse Gemini response")
-
     return json.loads(match.group())
